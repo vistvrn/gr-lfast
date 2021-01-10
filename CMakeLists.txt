@@ -43,7 +43,7 @@ list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
 # Set the version information here
 set(VERSION_MAJOR 3)
-set(VERSION_API    9)
+set(VERSION_API    0)
 set(VERSION_ABI 0)
 set(VERSION_PATCH git)
 
@@ -85,6 +85,7 @@ ENDIF()
 ########################################################################
 # Install directories
 ########################################################################
+include(FindPkgConfig)
 find_package(Gnuradio "3.9" REQUIRED)
 include(GrVersion)
 
@@ -127,6 +128,16 @@ endif(APPLE)
 find_package(Doxygen)
 
 ########################################################################
+# PyBind11 Related
+########################################################################
+
+find_package(pybind11 REQUIRED)
+execute_process(
+    COMMAND "${PYTHON_EXECUTABLE}" -c
+    "try:\n import numpy\n import os\n inc_path = numpy.get_include()\n if os.path.exists(os.path.join(inc_path, 'numpy', 'arrayobject.h')):\n  print(inc_path, end='')\nexcept:\n pass"
+    OUTPUT_VARIABLE PYTHON_NUMPY_INCLUDE_DIR)
+
+########################################################################
 # Setup doxygen option
 ########################################################################
 if(DOXYGEN_FOUND)
@@ -155,9 +166,14 @@ add_subdirectory(include/lfast)
 add_subdirectory(lib)
 add_subdirectory(apps)
 add_subdirectory(docs)
-add_subdirectory(swig)
-add_subdirectory(python)
-add_subdirectory(grc)
+# NOTE: manually update below to use GRC to generate C++ flowgraphs w/o python
+if(ENABLE_PYTHON)
+  message(STATUS "PYTHON and GRC components are enabled")
+  add_subdirectory(python)
+  add_subdirectory(grc)
+else(ENABLE_PYTHON)
+  message(STATUS "PYTHON and GRC components are disabled")
+endif(ENABLE_PYTHON)
 
 ########################################################################
 # Install cmake search helper for this library
